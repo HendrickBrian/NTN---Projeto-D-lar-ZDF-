@@ -439,6 +439,10 @@
     font-size: 10.5px;
     fill: var(--muted);
   }
+  .tick-year {
+    font-size: 9.5px;
+    letter-spacing: 0.1em;
+  }
   .endlabel {
     font-family: var(--display);
     font-size: 12.5px;
@@ -783,7 +787,19 @@
   const br = (s) => { const p = s.split("-"); return p[2] + "/" + p[1] + "/" + p[0]; };
   const brShort = (s) => { const p = s.split("-"); return p[2] + "/" + p[1]; };
   const DOW = { 1: "Segunda", 2: "Terça", 3: "Quarta", 4: "Quinta", 5: "Sexta" };
-  const MONTH = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
+
+  // Semana ISO 8601: a semana comeca na segunda e a semana 1 do ano e aquela
+  // com mais de 3 dias no ano novo — o mesmo que dizer, a que contem a
+  // primeira quinta-feira. Por isso a conta parte da quinta da semana.
+  function isoWeek(date) {
+    const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    d.setDate(d.getDate() - ((d.getDay() + 6) % 7) + 3);
+    const year = d.getFullYear();
+    const jan4 = new Date(year, 0, 4);
+    const firstThu = new Date(year, 0, 4 - ((jan4.getDay() + 6) % 7) + 3);
+    return { week: 1 + Math.round((d - firstThu) / 604800000), year: year };
+  }
+  const weekCode = (w) => "W" + String(w).padStart(2, "0");
 
   // ── series: only weeks already closed ───────────────────────────────────────
   const today = parseISO(DATA.fetchedAt);
@@ -962,7 +978,7 @@
   function draw() {
     const w = Math.max(320, stage.clientWidth);
     const h = w < 620 ? 280 : 380;
-    const M = { t: 30, r: 6, b: 38, l: 0 };
+    const M = { t: 30, r: 6, b: 50, l: 0 };
     const iw = w - M.l - M.r;
     const ih = h - M.t - M.b;
 
@@ -999,14 +1015,22 @@
     // x ticks — first, last and evenly spaced between
     const nTicks = Math.max(2, Math.min(7, Math.floor(iw / 78)));
     const seen = {};
+    let lastYear = null;
     for (let k = 0; k < nTicks; k++) {
       const i = Math.round((k / (nTicks - 1)) * (view.length - 1));
       if (seen[i]) continue;
       seen[i] = 1;
-      const d = parseISO(view[i].weekStart);
-      const t = el("text", { x: x(i), y: M.t + ih + 20, "text-anchor": k === 0 ? "start" : k === nTicks - 1 ? "end" : "middle", class: "tick" });
-      t.textContent = MONTH[d.getMonth()] + " " + String(d.getFullYear()).slice(2);
+      const iso = isoWeek(parseISO(view[i].weekStart));
+      const anchor = k === 0 ? "start" : k === nTicks - 1 ? "end" : "middle";
+      const t = el("text", { x: x(i), y: M.t + ih + 20, "text-anchor": anchor, class: "tick" });
+      t.textContent = weekCode(iso.week);
       svg.appendChild(t);
+      if (iso.year !== lastYear) {
+        const yl = el("text", { x: x(i), y: M.t + ih + 34, "text-anchor": anchor, class: "tick tick-year" });
+        yl.textContent = iso.year;
+        svg.appendChild(yl);
+      }
+      lastYear = iso.year;
     }
 
     // area wash + line
