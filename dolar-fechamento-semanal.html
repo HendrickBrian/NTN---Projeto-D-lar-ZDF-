@@ -227,6 +227,12 @@
     color: var(--steel-ink-2);
     font-variant-numeric: tabular-nums;
   }
+  .figure .period .wk {
+    font-family: var(--display);
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    color: var(--steel-ink);
+  }
   .figure .amount {
     margin: 4px 0 0;
     display: flex;
@@ -824,9 +830,13 @@
   // ── hero card ───────────────────────────────────────────────────────────────
   const fStart = parseISO(featured.weekStart);
   const fEnd = parseISO(featured.weekEnd);
+  const fIso = isoWeek(fStart);
+  const fWeekCode = weekCode(fIso.week) +
+    (fIso.year !== fEnd.getFullYear() ? "/" + fIso.year : "");
   const periodLabel = "segunda " + brShort(featured.weekStart) + "  →  sexta " +
     brShort(featured.weekEnd) + "/" + fEnd.getFullYear();
-  document.getElementById("hero-period").textContent = periodLabel;
+  document.getElementById("hero-period").innerHTML =
+    '<b class="wk">' + fWeekCode + "</b> · " + periodLabel;
   document.getElementById("hero-value").textContent = fmt4(featured.avg);
 
   function chip(pct, abs) {
