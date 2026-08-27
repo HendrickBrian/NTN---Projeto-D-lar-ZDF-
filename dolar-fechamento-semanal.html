@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light dark">
-<title>Fechamento semanal do dólar · NTN Rolamentos do Brasil</title>
+<title>Fechamento do dólar · NTN Rolamentos do Brasil</title>
 <style>
   /* Quicksand (SIL Open Font License 1.1) — tipografia de titulo da NTN.
      Subconjunto latino da fonte variavel, embutido para o painel continuar
@@ -42,6 +42,8 @@
     --steel-rule:  rgba(244, 246, 247, 0.20);
     --steel-rise:  #f28b7d;
     --steel-fall:  #3fc79c;
+    --steel-accent: #009adf;
+    --on-steel-accent: #0b0d0e;
 
     --plane:      #f3f5f6;
     --surface:    #ffffff;
@@ -193,6 +195,61 @@
   }
   .ident-src b { color: var(--steel-ink); font-weight: 600; }
 
+  /* seletor de modelo: a unica escolha que muda a pagina inteira, por isso
+     vive no bloco de marca e nao junto dos filtros do grafico */
+  .models {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 18px;
+    padding-top: 20px;
+  }
+  .models > .micro { color: var(--steel-ink-2); }
+  .models-switch {
+    display: flex;
+    gap: 4px;
+    padding: 4px;
+    border: 1px solid var(--steel-rule);
+    border-radius: 3px;
+  }
+  .models-switch button {
+    font-family: var(--sans);
+    font-size: 0.78rem;
+    color: var(--steel-ink-2);
+    background: transparent;
+    border: 0;
+    border-radius: 2px;
+    padding: 7px 13px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: baseline;
+    gap: 7px;
+    white-space: nowrap;
+    transition: background 120ms ease, color 120ms ease;
+  }
+  .models-switch button b {
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: 0.94rem;
+    letter-spacing: 0.045em;
+  }
+  .models-switch button:hover { color: var(--steel-ink); background: rgba(244, 246, 247, 0.07); }
+  .models-switch button[aria-pressed="true"] {
+    background: var(--steel-accent);
+    color: var(--on-steel-accent);
+  }
+  .models-switch button:focus-visible {
+    outline: 2px solid var(--steel-ink);
+    outline-offset: 2px;
+  }
+  .models-hint {
+    margin: 0;
+    font-size: 0.78rem;
+    line-height: 1.5;
+    color: var(--steel-ink-2);
+    max-width: 52ch;
+  }
+
   .lede {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(280px, auto);
@@ -328,6 +385,11 @@
     border-radius: 50%;
     background: var(--accent);
     box-shadow: 0 0 0 3px var(--steel);
+  }
+  .gauge-track.dense .gauge-dot {
+    width: 7px; height: 7px;
+    margin: -3.5px 0 0 -3.5px;
+    box-shadow: 0 0 0 2px var(--steel);
   }
   .gauge-avg {
     position: absolute;
@@ -500,6 +562,8 @@
     color: var(--ink-2);
   }
   .chart-legend span { display: inline-flex; align-items: center; gap: 8px; }
+  .chart-legend.no-keys .key { display: none; }
+  .chart-legend.no-keys .count { margin-left: 0; }
   .chart-legend .count { color: var(--muted); margin-left: auto; }
   .key-full, .key-part {
     width: 10px; height: 10px;
@@ -637,14 +701,23 @@
       </p>
     </div>
 
+    <div class="models" id="models">
+      <p class="micro">Modelo de cálculo</p>
+      <div class="models-switch" role="group" aria-label="Modelo de cálculo">
+        <button type="button" data-model="ZDF" aria-pressed="false"><b>ZDF</b> <span>mensal</span></button>
+        <button type="button" data-model="ZDF2" aria-pressed="true"><b>ZDF2</b> <span>semanal</span></button>
+      </div>
+      <p class="models-hint" id="model-hint">—</p>
+    </div>
+
     <div class="lede">
       <div>
-        <h1>Fechamento semanal do <em>dólar</em></h1>
-        <p class="sub">Média da taxa de câmbio de <strong>compra</strong> do dólar americano, de segunda a sexta-feira, apurada exclusivamente na série diária do Banco Central do Brasil.</p>
+        <h1>Fechamento <span id="h1-unidade">semanal</span> do <em>dólar</em></h1>
+        <p class="sub" id="lede-sub">—</p>
       </div>
 
       <div class="figure">
-        <p class="micro flag">Semana fechada</p>
+        <p class="micro flag" id="hero-flag">—</p>
         <p class="period" id="hero-period">—</p>
         <p class="amount">
           <span class="cur">R$</span>
@@ -657,7 +730,7 @@
 
     <div class="gauge">
       <div class="gauge-head">
-        <p class="micro">Faixa da semana · 5 cotações</p>
+        <p class="micro" id="gauge-label">—</p>
         <p class="micro amp">Amplitude <b id="t-amp">—</b></p>
       </div>
       <div class="gauge-track" id="spread-track" aria-hidden="true">
@@ -677,12 +750,12 @@
 
   <section class="rail" aria-label="Indicadores da semana">
     <div class="fig">
-      <p class="micro">Variação vs. semana anterior</p>
+      <p class="micro" id="t-var-lbl">—</p>
       <p class="fig-num" id="t-var">—</p>
       <p class="fig-foot" id="t-var-foot">—</p>
     </div>
     <div class="fig">
-      <p class="micro">Média das 4 últimas semanas</p>
+      <p class="micro" id="t-m4-lbl">—</p>
       <p class="fig-num" id="t-m4">—</p>
       <p class="fig-foot" id="t-m4-foot">—</p>
     </div>
@@ -697,14 +770,9 @@
     <div class="sec-head">
       <div>
         <h2 class="micro">Histórico</h2>
-        <p class="sec-sub">Média semanal da taxa de compra, em reais por dólar</p>
+        <p class="sec-sub" id="chart-sub">—</p>
       </div>
-      <div class="filters" role="group" aria-label="Período do histórico">
-        <button type="button" data-range="12">12 sem.</button>
-        <button type="button" data-range="26">26 sem.</button>
-        <button type="button" data-range="52" aria-pressed="true">52 sem.</button>
-        <button type="button" data-range="all">Tudo</button>
-      </div>
+      <div class="filters" id="filters" role="group" aria-label="Período do histórico"></div>
     </div>
 
     <div class="chart-stage" id="stage" tabindex="0" role="img" aria-label="Gráfico de linha com a média semanal da taxa de compra do dólar. Use as setas do teclado para percorrer as semanas.">
@@ -712,8 +780,8 @@
     </div>
 
     <div class="chart-legend">
-      <span><i class="key-full"></i> Semana completa, 5 cotações</span>
-      <span><i class="key-part"></i> Semana com feriado, menos de 5 cotações</span>
+      <span class="key"><i class="key-full"></i> Semana completa, 5 cotações</span>
+      <span class="key"><i class="key-part"></i> Semana com feriado, menos de 5 cotações</span>
       <span class="count" id="legend-count"></span>
     </div>
   </section>
@@ -749,24 +817,7 @@
         <p class="sec-sub">Como o número é apurado e o que ele não inclui</p>
       </div>
     </div>
-    <div class="method">
-      <div>
-        <h3>O cálculo</h3>
-        <p>A média semanal é a soma das taxas de compra publicadas de segunda a sexta-feira dividida pelo número de publicações: <code>Σ(taxas) ÷ nº de dias</code>. Nenhum outro ativo, provedor ou taxa de venda entra na conta.</p>
-      </div>
-      <div>
-        <h3>A fonte única</h3>
-        <p>Série 1 do sistema SGS do Banco Central — <em>taxa de câmbio livre, dólar americano, compra, diária</em>. O BCB não publica cotação em fins de semana nem em feriados bancários.</p>
-      </div>
-      <div>
-        <h3>Semanas incompletas</h3>
-        <p>Semanas com feriado têm menos de 5 cotações e aparecem no gráfico com marcador vazado. O bloco de destaque usa somente a última semana com os 5 dias completos.</p>
-      </div>
-      <div>
-        <h3>Sobre as cores</h3>
-        <p>Vermelho indica alta e verde indica baixa da taxa — direção do movimento, não juízo de valor. Toda variação vem acompanhada de seta e do texto “alta” ou “baixa”.</p>
-      </div>
-    </div>
+    <div class="method" id="method"></div>
   </section>
 
   <p class="colophon">Painel estático: os dados foram lidos da API pública do Banco Central em <span id="colophon-date">—</span> e não se atualizam sozinhos. Endpoint: <code>api.bcb.gov.br/dados/serie/bcdata.sgs.1/dados</code>.</p>
@@ -785,14 +836,18 @@
   const fmt4 = (v) => nf4.format(v);
   const fmtPct = (v) => (v > 0 ? "+" : v < 0 ? "−" : "") + nf2.format(Math.abs(v)) + "%";
   const fmtDelta = (v) => (v > 0 ? "+" : v < 0 ? "−" : "") + fmt4(Math.abs(v));
+  const r4 = (v) => +v.toFixed(4);
 
-  const parseISO = (s) => {
-    const p = s.split("-");
-    return new Date(+p[0], +p[1] - 1, +p[2]);
-  };
+  const parseISO = (s) => { const p = s.split("-"); return new Date(+p[0], +p[1] - 1, +p[2]); };
+  const isoOf = (d) => d.getFullYear() + "-" +
+    String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
   const br = (s) => { const p = s.split("-"); return p[2] + "/" + p[1] + "/" + p[0]; };
   const brShort = (s) => { const p = s.split("-"); return p[2] + "/" + p[1]; };
   const DOW = { 1: "Segunda", 2: "Terça", 3: "Quarta", 4: "Quinta", 5: "Sexta" };
+  const DOW3 = { 1: "Seg", 2: "Ter", 3: "Qua", 4: "Qui", 5: "Sex" };
+  const MES = ["janeiro", "fevereiro", "março", "abril", "maio", "junho",
+               "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
+  const MES3 = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
 
   // Semana ISO 8601: a semana comeca na segunda e a semana 1 do ano e aquela
   // com mais de 3 dias no ano novo — o mesmo que dizer, a que contem a
@@ -807,37 +862,174 @@
   }
   const weekCode = (w) => "W" + String(w).padStart(2, "0");
 
-  // ── series: only weeks already closed ───────────────────────────────────────
+  // ── a serie diaria e a fonte unica: os dois modelos saem dela ───────────────
+  const DAILY = [];
+  DATA.weeks.forEach((w) => w.days.forEach((d) => DAILY.push(d)));
+  DAILY.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
+
   const today = parseISO(DATA.fetchedAt);
   const dowToday = today.getDay() === 0 ? 7 : today.getDay();
   const mondayThis = new Date(today);
   mondayThis.setDate(today.getDate() - (dowToday - 1));
-  const mondayThisISO = mondayThis.getFullYear() + "-" +
-    String(mondayThis.getMonth() + 1).padStart(2, "0") + "-" +
-    String(mondayThis.getDate()).padStart(2, "0");
+  const mondayThisISO = isoOf(mondayThis);
+  const monthThisISO = isoOf(today).slice(0, 7);
 
-  const closed = DATA.weeks.filter((w) => w.weekStart < mondayThisISO);
-  const featuredIdx = (() => {
-    for (let i = closed.length - 1; i >= 0; i--) if (closed[i].complete) return i;
-    return closed.length - 1;
+  // ZDF2 — semanas ja fechadas, como o painel sempre fez
+  const WEEKS = DATA.weeks
+    .filter((w) => w.weekStart < mondayThisISO)
+    .map((w) => ({
+      start: w.weekStart, end: w.weekEnd, count: w.count, complete: w.complete,
+      avg: w.avg, min: w.min, max: w.max, days: w.days,
+    }));
+
+  // ZDF — meses ja fechados. A media pega TODAS as taxas diarias publicadas no
+  // mes, sem recorte por semana: uma taxa por mes, doze por ano.
+  const MONTHS = (function () {
+    const porMes = new Map();
+    DAILY.forEach((d) => {
+      const k = d.date.slice(0, 7);
+      if (!porMes.has(k)) porMes.set(k, []);
+      porMes.get(k).push(d);
+    });
+    const out = [];
+    Array.from(porMes.keys()).sort().forEach((k) => {
+      if (k >= monthThisISO) return;                 // mes corrente ainda nao fechou
+      const dias = porMes.get(k);
+      const vals = dias.map((d) => d.value);
+      const ano = +k.slice(0, 4), mes = +k.slice(5, 7);
+      out.push({
+        start: k + "-01",
+        end: isoOf(new Date(ano, mes, 0)),           // dia 0 do mes seguinte = ultimo dia deste
+        ano: ano, mes: mes,
+        count: dias.length,
+        // incompleto quando a serie comeca no meio do mes, nao quando ha feriado
+        complete: +dias[0].date.slice(8, 10) <= 5,
+        avg: r4(vals.reduce((a, b) => a + b, 0) / vals.length),
+        min: r4(Math.min.apply(null, vals)),
+        max: r4(Math.max.apply(null, vals)),
+        days: dias,
+      });
+    });
+    return out;
   })();
-  const featured = closed[featuredIdx];
-  const prev = closed[featuredIdx - 1] || null;
+
+  // ── os dois modelos, lado a lado ────────────────────────────────────────────
+  const MODELOS = {
+    ZDF2: {
+      unidade: "semanal",
+      periodos: WEEKS,
+      faixas: [[12, "12 sem."], [26, "26 sem."], [52, "52 sem."], ["all", "Tudo"]],
+      faixaPadrao: 52,
+      dica: "Média das taxas diárias de segunda a sexta-feira da semana fechada. Código ZDF2 no SAP.",
+      sub: 'Média da taxa de câmbio de <strong>compra</strong> do dólar americano, de segunda a sexta-feira, apurada exclusivamente na série diária do Banco Central do Brasil.',
+      bandeira: "Semana fechada",
+      chartSub: "Média semanal da taxa de compra, em reais por dólar",
+      etiqueta: (p) => {
+        const i = isoWeek(parseISO(p.start));
+        return weekCode(i.week) + (i.year !== parseISO(p.end).getFullYear() ? "/" + i.year : "");
+      },
+      periodo: (p) => "segunda " + brShort(p.start) + "  →  sexta " + brShort(p.end) + "/" +
+        parseISO(p.end).getFullYear(),
+      notaUnidade: "do período",
+      anteriorNome: "Semana anterior",
+      anteriorRef: (p) => brShort(p.start) + " – " + brShort(p.end),
+      faixaTitulo: (p) => "Faixa da semana · " + p.count + " cotações",
+      railVar: "Variação vs. semana anterior",
+      railJanela: "Média das 4 últimas semanas",
+      janela: 4,
+      janelaRef: (a, b) => "janela móvel · " + brShort(a.start) + " – " + brShort(b.end),
+      ultimaNota: (d) => br(d) + (d >= mondayThisISO ? " · semana em curso" : " · último dia publicado"),
+      tick: (p) => { const i = isoWeek(parseISO(p.start)); return { txt: weekCode(i.week), ano: i.year }; },
+      legendaChaves: true,
+      contagem: (n, p) => n + " semanas fechadas no gráfico · atual: " + brShort(p.start) + " – " + brShort(p.end),
+      tblLegenda: (p) => "Semana de " + br(p.start) + " a " + br(p.end) + " · " + p.count +
+        " cotações de compra publicadas pelo BCB.",
+      tblDia: (d) => DOW[d.dow],
+      tblRodape: (p) => "Média da semana (" + p.count + " dias)",
+      tblVs: "vs. sem. anterior",
+      tblNota: (d, v) => "A variação do primeiro dia é medida contra a última cotação publicada antes da semana (" +
+        br(d) + " · R$ " + fmt4(v) + ").",
+      tipPeriodo: (p) => br(p.start) + " – " + br(p.end),
+      tipContagem: (p) => p.count + " cotaç" + (p.count === 1 ? "ão" : "ões") +
+        (p.complete ? " (semana completa)" : " (feriado na semana)"),
+      tipVs: "vs. semana anterior",
+      aria: (p) => "Semana de " + br(p.start) + " a " + br(p.end),
+      metodologia: [
+        ["O cálculo", "A média semanal é a soma das taxas de compra publicadas de segunda a sexta-feira dividida pelo número de publicações: <code>Σ(taxas) ÷ nº de dias</code>. Nenhum outro ativo, provedor ou taxa de venda entra na conta."],
+        ["A fonte única", "Série 1 do sistema SGS do Banco Central — <em>taxa de câmbio livre, dólar americano, compra, diária</em>. O BCB não publica cotação em fins de semana nem em feriados bancários."],
+        ["Semanas incompletas", "Semanas com feriado têm menos de 5 cotações e aparecem no gráfico com marcador vazado. O bloco de destaque usa somente a última semana com os 5 dias completos."],
+        ["Sobre as cores", "Vermelho indica alta e verde indica baixa da taxa — direção do movimento, não juízo de valor. Toda variação vem acompanhada de seta e do texto “alta” ou “baixa”."],
+      ],
+    },
+
+    ZDF: {
+      unidade: "mensal",
+      periodos: MONTHS,
+      faixas: [[6, "6 meses"], [12, "12 meses"], [24, "24 meses"], ["all", "Tudo"]],
+      faixaPadrao: 12,
+      dica: "Média de todas as taxas diárias do mês fechado. Código ZDF no SAP — doze taxas por ano.",
+      sub: 'Média da taxa de câmbio de <strong>compra</strong> do dólar americano apurada sobre <strong>todos os dias</strong> do mês fechado, na série diária do Banco Central do Brasil.',
+      bandeira: "Mês fechado",
+      chartSub: "Média mensal da taxa de compra, em reais por dólar",
+      etiqueta: (p) => MES3[p.mes - 1].toUpperCase() + "/" + p.ano,
+      periodo: (p) => brShort(p.start) + "  →  " + brShort(p.end) + "/" + p.ano,
+      notaUnidade: "do mês",
+      anteriorNome: "Mês anterior",
+      anteriorRef: (p) => MES[p.mes - 1] + "/" + p.ano,
+      faixaTitulo: (p) => "Faixa do mês · " + p.count + " cotações",
+      railVar: "Variação vs. mês anterior",
+      railJanela: "Média do último trimestre",
+      janela: 3,
+      janelaRef: (a, b) => "janela móvel · " + MES3[a.mes - 1] + " – " + MES3[b.mes - 1] + "/" + b.ano,
+      ultimaNota: (d) => br(d) + (d.slice(0, 7) >= monthThisISO ? " · mês em curso" : " · último dia publicado"),
+      tick: (p) => ({ txt: MES3[p.mes - 1], ano: p.ano }),
+      legendaChaves: false,
+      contagem: (n, p) => n + " meses fechados no gráfico · atual: " + MES[p.mes - 1] + "/" + p.ano,
+      tblLegenda: (p) => "Mês de " + MES[p.mes - 1] + " de " + p.ano + " · " + p.count +
+        " cotações de compra publicadas pelo BCB.",
+      tblDia: (d) => DOW3[d.dow],
+      tblRodape: (p) => "Média do mês (" + p.count + " dias)",
+      tblVs: "vs. mês anterior",
+      tblNota: (d, v) => "A variação do primeiro dia é medida contra a última cotação publicada antes do mês (" +
+        br(d) + " · R$ " + fmt4(v) + ").",
+      tipPeriodo: (p) => MES[p.mes - 1] + " de " + p.ano,
+      tipContagem: (p) => p.count + " cotaç" + (p.count === 1 ? "ão" : "ões") + " no mês",
+      tipVs: "vs. mês anterior",
+      aria: (p) => "Mês de " + MES[p.mes - 1] + " de " + p.ano,
+      metodologia: [
+        ["O cálculo", "A média mensal é a soma de <em>todas</em> as taxas de compra publicadas no mês dividida pelo número de publicações: <code>Σ(taxas) ÷ nº de dias</code>. Entram todos os dias úteis do mês, sem recorte por semana."],
+        ["A fonte única", "Série 1 do sistema SGS do Banco Central — <em>taxa de câmbio livre, dólar americano, compra, diária</em>. O BCB não publica cotação em fins de semana nem em feriados bancários."],
+        ["Doze taxas por ano", "Cada mês fechado gera uma taxa, então o ano tem doze. O mês corrente só entra depois de encerrado — o bloco de destaque usa sempre o último mês completo."],
+        ["Sobre as cores", "Vermelho indica alta e verde indica baixa da taxa — direção do movimento, não juízo de valor. Toda variação vem acompanhada de seta e do texto “alta” ou “baixa”."],
+      ],
+    },
+  };
+
+  // ── estado ──────────────────────────────────────────────────────────────────
+  const CHAVE = "ntn-zdf-modelo";
+  let modeloAtivo = "ZDF2";
+  try {
+    const salvo = localStorage.getItem(CHAVE);
+    if (salvo && MODELOS[salvo]) modeloAtivo = salvo;
+  } catch (e) { /* navegador sem storage: segue no padrao */ }
+
+  let M = MODELOS[modeloAtivo];
+  let serie = M.periodos;
+  let destaqueIdx = 0, destaque = null, anterior = null;
+  let pctVsPrev = 0, absVsPrev = 0;
+  let range = M.faixaPadrao;
 
   document.getElementById("stamp-fetched").textContent = br(DATA.fetchedAt);
   document.getElementById("colophon-date").textContent = br(DATA.fetchedAt);
 
-  // ── hero card ───────────────────────────────────────────────────────────────
-  const fStart = parseISO(featured.weekStart);
-  const fEnd = parseISO(featured.weekEnd);
-  const fIso = isoWeek(fStart);
-  const fWeekCode = weekCode(fIso.week) +
-    (fIso.year !== fEnd.getFullYear() ? "/" + fIso.year : "");
-  const periodLabel = "segunda " + brShort(featured.weekStart) + "  →  sexta " +
-    brShort(featured.weekEnd) + "/" + fEnd.getFullYear();
-  document.getElementById("hero-period").innerHTML =
-    '<b class="wk">' + fWeekCode + "</b> · " + periodLabel;
-  document.getElementById("hero-value").textContent = fmt4(featured.avg);
+  function selecionarDestaque() {
+    destaqueIdx = serie.length - 1;
+    for (let i = serie.length - 1; i >= 0; i--) { if (serie[i].complete) { destaqueIdx = i; break; } }
+    destaque = serie[destaqueIdx] || null;
+    anterior = serie[destaqueIdx - 1] || null;
+    absVsPrev = anterior ? destaque.avg - anterior.avg : 0;
+    pctVsPrev = anterior ? (absVsPrev / anterior.avg) * 100 : 0;
+  }
 
   function chip(pct, abs) {
     const dir = pct > 0.0001 ? "up" : pct < -0.0001 ? "down" : "flat";
@@ -845,32 +1037,46 @@
     const word = dir === "up" ? "alta" : dir === "down" ? "baixa" : "estável";
     const el = document.createElement("span");
     el.className = "chip " + dir;
-    el.innerHTML = '<span class="arrow" aria-hidden="true">' + arrow + "</span>" +
-      fmtPct(pct) + " " + word;
-    el.title = "Variação de " + fmtDelta(abs) + " frente à média da semana anterior";
+    el.innerHTML = '<span class="arrow" aria-hidden="true">' + arrow + "</span>" + fmtPct(pct) + " " + word;
+    el.title = "Variação de " + fmtDelta(abs) + " frente à média " +
+      (modeloAtivo === "ZDF" ? "do mês anterior" : "da semana anterior");
     return el;
   }
 
-  let pctVsPrev = 0, absVsPrev = 0;
-  if (prev) {
-    absVsPrev = featured.avg - prev.avg;
-    pctVsPrev = (absVsPrev / prev.avg) * 100;
-    document.getElementById("hero-chip").appendChild(chip(pctVsPrev, absVsPrev));
-  }
-  document.getElementById("hero-note").textContent =
-    "Média das " + featured.count + " cotações de compra do período" +
-    (prev ? ". Semana anterior (" + brShort(prev.weekStart) + " – " + brShort(prev.weekEnd) + "): R$ " + fmt4(prev.avg) + "." : ".");
+  // ── bloco de destaque ───────────────────────────────────────────────────────
+  function pintarDestaque() {
+    document.getElementById("h1-unidade").textContent = M.unidade;
+    document.getElementById("lede-sub").innerHTML = M.sub;
+    document.getElementById("hero-flag").textContent = M.bandeira;
+    document.getElementById("hero-period").innerHTML =
+      '<b class="wk">' + M.etiqueta(destaque) + "</b> · " + M.periodo(destaque);
+    document.getElementById("hero-value").textContent = fmt4(destaque.avg);
 
-  // ── escala de medicao da semana ─────────────────────────────────────────────
-  // Os 5 dias lidos sobre a regua graduada, a media marcada e a amplitude
-  // declarada: a leitura de uma cota com faixa de medicao.
-  (function gauge() {
+    const alvo = document.getElementById("hero-chip");
+    alvo.textContent = "";
+    if (anterior) alvo.appendChild(chip(pctVsPrev, absVsPrev));
+
+    document.getElementById("hero-note").textContent =
+      "Média das " + destaque.count + " cotações de compra " + M.notaUnidade +
+      (anterior ? ". " + M.anteriorNome + " (" + M.anteriorRef(anterior) + "): R$ " + fmt4(anterior.avg) + "." : ".");
+    document.title = "Fechamento " + M.unidade + " do dólar";
+  }
+
+  // ── escala de medicao do periodo ────────────────────────────────────────────
+  // Os dias do periodo lidos sobre a regua graduada, a media marcada e a
+  // amplitude declarada: a leitura de uma cota com faixa de medicao.
+  function pintarEscala() {
     const track = document.getElementById("spread-track");
-    const lo = featured.min, hi = featured.max;
+    track.querySelectorAll(".gauge-dot, .gauge-avg, .gauge-avg-label").forEach((n) => n.remove());
+    track.classList.toggle("dense", destaque.days.length > 10);
+
+    document.getElementById("gauge-label").textContent = M.faixaTitulo(destaque);
+
+    const lo = destaque.min, hi = destaque.max;
     const span = hi - lo || 1;
     const pos = (v) => ((v - lo) / span) * 100;
 
-    featured.days.forEach((d) => {
+    destaque.days.forEach((d) => {
       const dot = document.createElement("div");
       dot.className = "gauge-dot";
       dot.style.left = pos(d.value) + "%";
@@ -880,55 +1086,64 @@
 
     const mark = document.createElement("div");
     mark.className = "gauge-avg";
-    mark.style.left = pos(featured.avg) + "%";
+    mark.style.left = pos(destaque.avg) + "%";
     track.appendChild(mark);
 
     const lab = document.createElement("div");
     lab.className = "gauge-avg-label";
-    lab.textContent = "MÉDIA " + fmt4(featured.avg);
-    lab.style.left = Math.min(84, Math.max(16, pos(featured.avg))) + "%";
+    lab.textContent = "MÉDIA " + fmt4(destaque.avg);
+    lab.style.left = Math.min(84, Math.max(16, pos(destaque.avg))) + "%";
     track.appendChild(lab);
 
     document.getElementById("spread-min").textContent = "mín. " + fmt4(lo);
     document.getElementById("spread-max").textContent = "máx. " + fmt4(hi);
     document.getElementById("t-amp").textContent = fmt4(hi - lo);
-  })();
+  }
 
-  // ── stat tiles ──────────────────────────────────────────────────────────────
-  (function tiles() {
+  // ── trilha de indicadores ───────────────────────────────────────────────────
+  function pintarTrilha() {
+    document.getElementById("t-var-lbl").textContent = M.railVar;
+    document.getElementById("t-m4-lbl").textContent = M.railJanela;
+
     const varEl = document.getElementById("t-var");
-    if (prev) {
+    if (anterior) {
       varEl.textContent = fmtPct(pctVsPrev);
       varEl.style.color = pctVsPrev > 0 ? "var(--rise)" : pctVsPrev < 0 ? "var(--fall)" : "var(--ink)";
       document.getElementById("t-var-foot").textContent =
-        fmt4(prev.avg) + " → " + fmt4(featured.avg) + "  (" + fmtDelta(absVsPrev) + ")";
+        fmt4(anterior.avg) + " → " + fmt4(destaque.avg) + "  (" + fmtDelta(absVsPrev) + ")";
     } else {
       varEl.textContent = "—";
+      varEl.style.color = "";
+      document.getElementById("t-var-foot").textContent = "—";
     }
 
-    const last4 = closed.slice(Math.max(0, featuredIdx - 3), featuredIdx + 1);
-    const m4 = last4.reduce((s, w) => s + w.avg, 0) / last4.length;
-    document.getElementById("t-m4").textContent = fmt4(m4);
-    document.getElementById("t-m4-foot").textContent =
-      "janela móvel · " + brShort(last4[0].weekStart) + " – " + brShort(featured.weekEnd);
+    const janela = serie.slice(Math.max(0, destaqueIdx - (M.janela - 1)), destaqueIdx + 1);
+    const media = janela.reduce((s, p) => s + p.avg, 0) / janela.length;
+    document.getElementById("t-m4").textContent = fmt4(media);
+    document.getElementById("t-m4-foot").textContent = M.janelaRef(janela[0], destaque);
 
     document.getElementById("t-last").textContent = fmt4(DATA.lastQuote.value);
-    const inProgress = DATA.lastQuote.date >= mondayThisISO;
-    document.getElementById("t-last-foot").textContent =
-      br(DATA.lastQuote.date) + (inProgress ? " · semana em curso" : " · último dia publicado");
-  })();
+    document.getElementById("t-last-foot").textContent = M.ultimaNota(DATA.lastQuote.date);
+  }
 
-  // ── daily table ─────────────────────────────────────────────────────────────
-  (function table() {
-    document.getElementById("tbl-caption").textContent =
-      "Semana de " + br(featured.weekStart) + " a " + br(featured.weekEnd) +
-      " · " + featured.count + " cotações de compra publicadas pelo BCB.";
+  // ── tabela de composicao ────────────────────────────────────────────────────
+  function pintarTabela() {
+    document.getElementById("tbl-caption").textContent = M.tblLegenda(destaque);
 
     const tbody = document.getElementById("tbl-body");
-    const prevClose = prev ? prev.days[prev.days.length - 1] : null;
+    const foot = document.getElementById("tbl-foot");
+    tbody.textContent = "";
+    foot.textContent = "";
 
-    featured.days.forEach((d, i) => {
-      const base = i === 0 ? (prevClose ? prevClose.value : null) : featured.days[i - 1].value;
+    // ultima cotacao publicada antes do periodo, para a variacao do primeiro dia
+    const primeiro = destaque.days[0].date;
+    let base0 = null;
+    for (let i = DAILY.length - 1; i >= 0; i--) {
+      if (DAILY[i].date < primeiro) { base0 = DAILY[i]; break; }
+    }
+
+    destaque.days.forEach((d, i) => {
+      const base = i === 0 ? (base0 ? base0.value : null) : destaque.days[i - 1].value;
       const abs = base === null ? null : d.value - base;
       const pct = base === null ? null : (abs / base) * 100;
       const dir = abs === null ? "flat" : abs > 0.00005 ? "up" : abs < -0.00005 ? "down" : "flat";
@@ -936,7 +1151,7 @@
 
       const tr = document.createElement("tr");
       tr.innerHTML =
-        '<td class="day">' + DOW[d.dow] + "</td>" +
+        '<td class="day">' + M.tblDia(d) + "</td>" +
         '<td class="date">' + br(d.date) + "</td>" +
         '<td class="rate">' + fmt4(d.value) + "</td>" +
         '<td class="delta ' + dir + '">' + (abs === null ? "—" : arrow + fmtDelta(abs)) + "</td>" +
@@ -944,28 +1159,58 @@
       tbody.appendChild(tr);
     });
 
-    const foot = document.getElementById("tbl-foot");
     const tr = document.createElement("tr");
     tr.innerHTML =
-      '<td colspan="2">Média da semana (' + featured.count + " dias)</td>" +
-      '<td class="rate">' + fmt4(featured.avg) + "</td>" +
-      '<td colspan="2" class="delta wrap-cell">' + (prev ? fmtPct(pctVsPrev) + " vs. sem. anterior" : "—") + "</td>";
+      '<td colspan="2">' + M.tblRodape(destaque) + "</td>" +
+      '<td class="rate">' + fmt4(destaque.avg) + "</td>" +
+      '<td colspan="2" class="delta wrap-cell">' +
+      (anterior ? fmtPct(pctVsPrev) + " " + M.tblVs : "—") + "</td>";
     foot.appendChild(tr);
 
-    if (prevClose) {
-      const note = document.createElement("tr");
-      note.innerHTML = '<td colspan="5" class="note-cell">' +
-        "A variação da segunda-feira é medida contra a última cotação publicada antes da semana (" +
-        br(prevClose.date) + " · R$ " + fmt4(prevClose.value) + ")." + "</td>";
-      foot.appendChild(note);
+    if (base0) {
+      const nota = document.createElement("tr");
+      nota.innerHTML = '<td colspan="5" class="note-cell">' + M.tblNota(base0.date, base0.value) + "</td>";
+      foot.appendChild(nota);
     }
-  })();
+  }
+
+  // ── metodologia ─────────────────────────────────────────────────────────────
+  function pintarMetodologia() {
+    const alvo = document.getElementById("method");
+    alvo.textContent = "";
+    M.metodologia.forEach(([titulo, texto]) => {
+      const bloco = document.createElement("div");
+      bloco.innerHTML = "<h3>" + titulo + "</h3><p>" + texto + "</p>";
+      alvo.appendChild(bloco);
+    });
+  }
+
+  // ── filtros de periodo do grafico ───────────────────────────────────────────
+  function pintarFiltros() {
+    const alvo = document.getElementById("filters");
+    alvo.textContent = "";
+    M.faixas.forEach(([valor, rotulo]) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.dataset.range = valor;
+      b.textContent = rotulo;
+      b.setAttribute("aria-pressed", String(valor === range));
+      b.addEventListener("click", function () {
+        range = b.dataset.range === "all" ? "all" : +b.dataset.range;
+        alvo.querySelectorAll("button").forEach((o) =>
+          o.setAttribute("aria-pressed", String((o.dataset.range === "all" ? "all" : +o.dataset.range) === range)));
+        cursor = -1;
+        hide();
+        draw();
+      });
+      alvo.appendChild(b);
+    });
+  }
 
   // ── history chart ───────────────────────────────────────────────────────────
   const SVGNS = "http://www.w3.org/2000/svg";
   const stage = document.getElementById("stage");
   const tip = document.getElementById("tip");
-  let range = 52;
   let firstDraw = true;
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   let view = [];
@@ -988,11 +1233,11 @@
   function draw() {
     const w = Math.max(320, stage.clientWidth);
     const h = w < 620 ? 280 : 380;
-    const M = { t: 30, r: 6, b: 50, l: 0 };
-    const iw = w - M.l - M.r;
-    const ih = h - M.t - M.b;
+    const M0 = { t: 30, r: 6, b: 50, l: 0 };
+    const iw = w - M0.l - M0.r;
+    const ih = h - M0.t - M0.b;
 
-    view = range === "all" ? closed.slice() : closed.slice(Math.max(0, closed.length - range));
+    view = range === "all" ? serie.slice() : serie.slice(Math.max(0, serie.length - range));
 
     const vals = view.map((d) => d.avg);
     let lo = Math.min.apply(null, vals), hi = Math.max.apply(null, vals);
@@ -1000,9 +1245,9 @@
     lo -= padY; hi += padY;
     const step = niceStep((hi - lo) / 4);
 
-    const x = (i) => M.l + (view.length === 1 ? iw / 2 : (i / (view.length - 1)) * iw);
-    const y = (v) => M.t + ih - ((v - lo) / (hi - lo)) * ih;
-    geom = { x: x, y: y, M: M, w: w, h: h, iw: iw, ih: ih };
+    const x = (i) => M0.l + (view.length === 1 ? iw / 2 : (i / (view.length - 1)) * iw);
+    const y = (v) => M0.t + ih - ((v - lo) / (hi - lo)) * ih;
+    geom = { x: x, y: y, M: M0, w: w, h: h, iw: iw, ih: ih };
 
     const svg = el("svg", { viewBox: "0 0 " + w + " " + h, width: w, height: h, role: "presentation" });
 
@@ -1010,19 +1255,20 @@
     const decs = step < 0.05 ? 3 : 2;
     for (let v = Math.ceil(lo / step) * step; v <= hi + 1e-9; v += step) {
       const yy = Math.round(y(v)) + 0.5;
-      svg.appendChild(el("line", { x1: M.l, x2: M.l + iw, y1: yy, y2: yy, stroke: "var(--grid)", "stroke-width": 1 }));
-      const t = el("text", { x: M.l, y: yy - 7, "text-anchor": "start", class: "tick" });
+      svg.appendChild(el("line", { x1: M0.l, x2: M0.l + iw, y1: yy, y2: yy, stroke: "var(--grid)", "stroke-width": 1 }));
+      const t = el("text", { x: M0.l, y: yy - 7, "text-anchor": "start", class: "tick" });
       t.textContent = v.toLocaleString("pt-BR", { minimumFractionDigits: decs, maximumFractionDigits: decs });
       svg.appendChild(t);
     }
 
     // baseline
     svg.appendChild(el("line", {
-      x1: M.l, x2: M.l + iw, y1: M.t + ih + 0.5, y2: M.t + ih + 0.5,
+      x1: M0.l, x2: M0.l + iw, y1: M0.t + ih + 0.5, y2: M0.t + ih + 0.5,
       stroke: "var(--axis)", "stroke-width": 1
     }));
 
-    // x ticks — first, last and evenly spaced between
+    // x ticks — primeiro, ultimo e igualmente espacados no meio. O ano so
+    // aparece quando muda de um rotulo para o outro.
     const nTicks = Math.max(2, Math.min(7, Math.floor(iw / 78)));
     const seen = {};
     let lastYear = null;
@@ -1030,17 +1276,17 @@
       const i = Math.round((k / (nTicks - 1)) * (view.length - 1));
       if (seen[i]) continue;
       seen[i] = 1;
-      const iso = isoWeek(parseISO(view[i].weekStart));
+      const marca = M.tick(view[i]);
       const anchor = k === 0 ? "start" : k === nTicks - 1 ? "end" : "middle";
-      const t = el("text", { x: x(i), y: M.t + ih + 20, "text-anchor": anchor, class: "tick" });
-      t.textContent = weekCode(iso.week);
+      const t = el("text", { x: x(i), y: M0.t + ih + 20, "text-anchor": anchor, class: "tick" });
+      t.textContent = marca.txt;
       svg.appendChild(t);
-      if (iso.year !== lastYear) {
-        const yl = el("text", { x: x(i), y: M.t + ih + 34, "text-anchor": anchor, class: "tick tick-year" });
-        yl.textContent = iso.year;
+      if (marca.ano !== lastYear) {
+        const yl = el("text", { x: x(i), y: M0.t + ih + 34, "text-anchor": anchor, class: "tick tick-year" });
+        yl.textContent = marca.ano;
         svg.appendChild(yl);
       }
-      lastYear = iso.year;
+      lastYear = marca.ano;
     }
 
     // area wash + line
@@ -1050,7 +1296,7 @@
       area += " L " + x(i) + " " + y(view[i].avg);
       line += " L " + x(i) + " " + y(view[i].avg);
     }
-    area += " L " + x(view.length - 1) + " " + (M.t + ih) + " L " + x(0) + " " + (M.t + ih) + " Z";
+    area += " L " + x(view.length - 1) + " " + (M0.t + ih) + " L " + x(0) + " " + (M0.t + ih) + " Z";
     const defs = el("defs", {});
     const wash = el("linearGradient", { id: "wash", x1: "0", y1: "0", x2: "0", y2: "1" });
     wash.appendChild(el("stop", { offset: "0", "stop-color": "var(--wash-a)" }));
@@ -1065,23 +1311,23 @@
     svg.appendChild(areaPath);
     svg.appendChild(linePath);
 
-    // hollow markers for incomplete weeks (secondary encoding, not colour alone)
+    // marcador vazado para periodo incompleto (codificacao redundante, nao so cor)
     const dense = view.length > 60;
     view.forEach((d, i) => {
       if (d.complete) return;
       if (dense && i !== view.length - 1) return;
       svg.appendChild(el("circle", {
         cx: x(i), cy: y(d.avg), r: 4,
-        fill: "var(--surface)", stroke: "var(--series)", "stroke-width": 2
+        fill: "var(--plane)", stroke: "var(--series)", "stroke-width": 2
       }));
     });
 
-    // emphasised endpoint + direct label
+    // ponto final destacado + rotulo direto
     const li = view.length - 1;
     svg.appendChild(el("circle", {
       cx: x(li), cy: y(view[li].avg), r: 5,
-      fill: view[li].complete ? "var(--series)" : "var(--surface)",
-      stroke: view[li].complete ? "var(--surface)" : "var(--series)", "stroke-width": 2
+      fill: view[li].complete ? "var(--series)" : "var(--plane)",
+      stroke: view[li].complete ? "var(--plane)" : "var(--series)", "stroke-width": 2
     }));
     const lab = el("text", { x: x(li), y: y(view[li].avg) - 15, "text-anchor": "end", class: "endlabel" });
     lab.textContent = fmt4(view[li].avg);
@@ -1089,12 +1335,12 @@
 
     // crosshair layer
     const cross = el("g", { id: "cross", visibility: "hidden" });
-    cross.appendChild(el("line", { id: "cross-l", y1: M.t, y2: M.t + ih, stroke: "var(--axis)", "stroke-width": 1 }));
-    cross.appendChild(el("circle", { id: "cross-d", r: 5, fill: "var(--series)", stroke: "var(--surface)", "stroke-width": 2 }));
+    cross.appendChild(el("line", { id: "cross-l", y1: M0.t, y2: M0.t + ih, stroke: "var(--axis)", "stroke-width": 1 }));
+    cross.appendChild(el("circle", { id: "cross-d", r: 5, fill: "var(--series)", stroke: "var(--plane)", "stroke-width": 2 }));
     svg.appendChild(cross);
 
     // hit area
-    const hit = el("rect", { x: M.l, y: M.t, width: iw, height: ih, fill: "transparent", style: "cursor:crosshair" });
+    const hit = el("rect", { x: M0.l, y: M0.t, width: iw, height: ih, fill: "transparent", style: "cursor:crosshair" });
     svg.appendChild(hit);
 
     stage.querySelectorAll("svg").forEach((s) => s.remove());
@@ -1117,8 +1363,7 @@
     hit.addEventListener("pointerdown", onMove);
     hit.addEventListener("pointerleave", hide);
 
-    document.getElementById("legend-count").textContent =
-      view.length + " semanas fechadas no gráfico · atual: " + brShort(view[li].weekStart) + " – " + brShort(view[li].weekEnd);
+    document.getElementById("legend-count").textContent = M.contagem(view.length, view[li]);
 
     if (cursor >= 0) show(Math.min(cursor, view.length - 1));
   }
@@ -1160,14 +1405,13 @@
       const arrow = dir === "up" ? "▲" : dir === "down" ? "▼" : "→";
       const color = dir === "up" ? "var(--rise)" : dir === "down" ? "var(--fall)" : "var(--muted)";
       rows += '<div class="t-row"><span style="color:' + color + '">' + arrow + " " + fmtPct(pc) +
-        "</span> vs. semana anterior</div>";
+        "</span> " + M.tipVs + "</div>";
     }
     rows += '<div class="t-row">mín. ' + fmt4(d.min) + " · máx. " + fmt4(d.max) + "</div>";
-    rows += '<div class="t-row' + (d.complete ? "" : " part") + '">' + d.count + " cotaç" + (d.count === 1 ? "ão" : "ões") +
-      (d.complete ? " (semana completa)" : " (feriado na semana)") + "</div>";
+    rows += '<div class="t-row' + (d.complete ? "" : " part") + '">' + M.tipContagem(d) + "</div>";
 
     tip.innerHTML =
-      '<div class="t-per">' + br(d.weekStart) + " – " + br(d.weekEnd) + "</div>" +
+      '<div class="t-per">' + M.tipPeriodo(d) + "</div>" +
       '<div class="t-val"><i class="t-key"></i>R$ ' + fmt4(d.avg) + "</div>" + rows;
     tip.classList.add("on");
 
@@ -1181,9 +1425,7 @@
     tip.style.left = left + "px";
     tip.style.top = top + "px";
 
-    stage.setAttribute("aria-label",
-      "Semana de " + br(d.weekStart) + " a " + br(d.weekEnd) + ": média R$ " + fmt4(d.avg) +
-      ", " + d.count + " cotações.");
+    stage.setAttribute("aria-label", M.aria(d) + ": média R$ " + fmt4(d.avg) + ", " + d.count + " cotações.");
   }
 
   function hide() {
@@ -1204,18 +1446,42 @@
   });
   stage.addEventListener("blur", hide);
 
-  document.querySelectorAll(".filters button").forEach(function (b) {
-    b.addEventListener("click", function () {
-      document.querySelectorAll(".filters button").forEach(function (o) { o.setAttribute("aria-pressed", "false"); });
-      b.setAttribute("aria-pressed", "true");
-      range = b.dataset.range === "all" ? "all" : +b.dataset.range;
-      cursor = -1;
-      hide();
-      draw();
-    });
+  // ── troca de modelo ─────────────────────────────────────────────────────────
+  function aplicarModelo(codigo, primeiraCarga) {
+    modeloAtivo = codigo;
+    M = MODELOS[codigo];
+    serie = M.periodos;
+    range = M.faixaPadrao;
+    cursor = -1;
+    selecionarDestaque();
+
+    document.querySelectorAll("#models button").forEach((b) =>
+      b.setAttribute("aria-pressed", String(b.dataset.model === codigo)));
+    document.getElementById("model-hint").textContent = M.dica;
+    document.getElementById("chart-sub").textContent = M.chartSub;
+    document.querySelector(".chart-legend").classList.toggle("no-keys", !M.legendaChaves);
+
+    pintarDestaque();
+    pintarEscala();
+    pintarTrilha();
+    pintarTabela();
+    pintarMetodologia();
+    pintarFiltros();
+
+    if (!primeiraCarga) firstDraw = false;
+    hide();
+    draw();
+
+    try { localStorage.setItem(CHAVE, codigo); } catch (e) { /* sem storage: so nao lembra */ }
+  }
+
+  document.getElementById("models").addEventListener("click", function (ev) {
+    const b = ev.target.closest("button[data-model]");
+    if (b && b.dataset.model !== modeloAtivo) aplicarModelo(b.dataset.model, false);
   });
 
-  draw();
+  aplicarModelo(modeloAtivo, true);
+
   let rt;
   window.addEventListener("resize", function () {
     clearTimeout(rt);
