@@ -492,6 +492,32 @@
     outline-offset: 3px;
   }
 
+  /* seletor de periodo da tabela: mesmo vocabulario visual dos filtros do
+     grafico, mas em <select> nativo — sao muitos meses/semanas para caber
+     como botoes, e o <select> ja da busca por teclado de graca */
+  .tbl-select { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+  .tbl-select select {
+    font-family: var(--sans);
+    font-size: 0.8rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink);
+    background: var(--surface);
+    border: 1px solid var(--hairline);
+    border-radius: 2px;
+    padding: 7px 30px 7px 12px;
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%2371716f' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 11px center;
+  }
+  .tbl-select select:hover { border-color: var(--rule); }
+  .tbl-select select:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
   /* ───────────────────────────────── grafico ──────────────────────────────── */
   .chart-stage { position: relative; width: 100%; }
   .chart-stage svg { display: block; width: 100%; height: auto; overflow: visible; }
@@ -792,6 +818,7 @@
         <h2 class="micro">Composição da média</h2>
       </div>
     </div>
+    <div class="tbl-select" id="tbl-select"></div>
     <div class="table-scroll">
       <table>
         <caption id="tbl-caption">—</caption>
@@ -1126,9 +1153,82 @@
     document.getElementById("t-last-foot").textContent = M.ultimaNota(DATA.lastQuote.date);
   }
 
+  // ── seletor de periodo da tabela ────────────────────────────────────────────
+  // Independente do destaque: o bloco de topo, a escala e o grafico continuam
+  // sempre no ultimo periodo fechado; so a tabela responde ao seletor.
+  let tabelaIdx = 0;
+
+  function pintarSeletorTabela() {
+    const alvo = document.getElementById("tbl-select");
+    alvo.textContent = "";
+
+    if (modeloAtivo === "ZDF") {
+      const sel = document.createElement("select");
+      sel.id = "tbl-mes";
+      sel.setAttribute("aria-label", "Mês da tabela");
+      serie.forEach((p, i) => {
+        const opt = document.createElement("option");
+        opt.value = i;
+        opt.textContent = MES[p.mes - 1][0].toUpperCase() + MES[p.mes - 1].slice(1) + " de " + p.ano;
+        if (i === tabelaIdx) opt.selected = true;
+        sel.appendChild(opt);
+      });
+      sel.addEventListener("change", () => { tabelaIdx = +sel.value; pintarTabela(); });
+      alvo.appendChild(sel);
+      return;
+    }
+
+    // ZDF2 — ano e semana, o ano filtra as opcoes do segundo select
+    const anos = Array.from(new Set(serie.map((p) => p.start.slice(0, 4)))).sort();
+    const anoAtual = serie[tabelaIdx].start.slice(0, 4);
+
+    const selAno = document.createElement("select");
+    selAno.id = "tbl-ano";
+    selAno.setAttribute("aria-label", "Ano da tabela");
+    anos.forEach((a) => {
+      const opt = document.createElement("option");
+      opt.value = a; opt.textContent = a;
+      if (a === anoAtual) opt.selected = true;
+      selAno.appendChild(opt);
+    });
+
+    const selSemana = document.createElement("select");
+    selSemana.id = "tbl-semana";
+    selSemana.setAttribute("aria-label", "Semana da tabela");
+
+    function popularSemanas(ano, manterIdx) {
+      selSemana.textContent = "";
+      serie.forEach((p, i) => {
+        if (p.start.slice(0, 4) !== ano) return;
+        const opt = document.createElement("option");
+        opt.value = i;
+        opt.textContent = M.etiqueta(p) + " · " + brShort(p.start) + " – " + brShort(p.end);
+        if (manterIdx != null ? i === manterIdx : i === tabelaIdx) opt.selected = true;
+        selSemana.appendChild(opt);
+      });
+    }
+    popularSemanas(anoAtual, tabelaIdx);
+
+    selAno.addEventListener("change", () => {
+      const primeiraDoAno = serie.findIndex((p) => p.start.slice(0, 4) === selAno.value);
+      popularSemanas(selAno.value, primeiraDoAno);
+      tabelaIdx = primeiraDoAno;
+      pintarTabela();
+    });
+    selSemana.addEventListener("change", () => { tabelaIdx = +selSemana.value; pintarTabela(); });
+
+    alvo.appendChild(selAno);
+    alvo.appendChild(selSemana);
+  }
+
   // ── tabela de composicao ────────────────────────────────────────────────────
   function pintarTabela() {
-    document.getElementById("tbl-caption").textContent = M.tblLegenda(destaque);
+    const periodo = serie[tabelaIdx];
+    const ant = serie[tabelaIdx - 1] || null;
+    const absV = ant ? periodo.avg - ant.avg : 0;
+    const pctV = ant ? (absV / ant.avg) * 100 : 0;
+
+    document.getElementById("tbl-caption").textContent = M.tblLegenda(periodo);
 
     const tbody = document.getElementById("tbl-body");
     const foot = document.getElementById("tbl-foot");
@@ -1136,14 +1236,14 @@
     foot.textContent = "";
 
     // ultima cotacao publicada antes do periodo, para a variacao do primeiro dia
-    const primeiro = destaque.days[0].date;
+    const primeiro = periodo.days[0].date;
     let base0 = null;
     for (let i = DAILY.length - 1; i >= 0; i--) {
       if (DAILY[i].date < primeiro) { base0 = DAILY[i]; break; }
     }
 
-    destaque.days.forEach((d, i) => {
-      const base = i === 0 ? (base0 ? base0.value : null) : destaque.days[i - 1].value;
+    periodo.days.forEach((d, i) => {
+      const base = i === 0 ? (base0 ? base0.value : null) : periodo.days[i - 1].value;
       const abs = base === null ? null : d.value - base;
       const pct = base === null ? null : (abs / base) * 100;
       const dir = abs === null ? "flat" : abs > 0.00005 ? "up" : abs < -0.00005 ? "down" : "flat";
@@ -1161,10 +1261,10 @@
 
     const tr = document.createElement("tr");
     tr.innerHTML =
-      '<td colspan="2">' + M.tblRodape(destaque) + "</td>" +
-      '<td class="rate">' + fmt4(destaque.avg) + "</td>" +
+      '<td colspan="2">' + M.tblRodape(periodo) + "</td>" +
+      '<td class="rate">' + fmt4(periodo.avg) + "</td>" +
       '<td colspan="2" class="delta wrap-cell">' +
-      (anterior ? fmtPct(pctVsPrev) + " " + M.tblVs : "—") + "</td>";
+      (ant ? fmtPct(pctV) + " " + M.tblVs : "—") + "</td>";
     foot.appendChild(tr);
 
     if (base0) {
@@ -1454,6 +1554,7 @@
     range = M.faixaPadrao;
     cursor = -1;
     selecionarDestaque();
+    tabelaIdx = destaqueIdx;
 
     document.querySelectorAll("#models button").forEach((b) =>
       b.setAttribute("aria-pressed", String(b.dataset.model === codigo)));
@@ -1464,6 +1565,7 @@
     pintarDestaque();
     pintarEscala();
     pintarTrilha();
+    pintarSeletorTabela();
     pintarTabela();
     pintarMetodologia();
     pintarFiltros();
